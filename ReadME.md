@@ -3,3 +3,4 @@ cover different real-life business data challenges that aim to simplify SQL conc
 learning for beginner data scientist/data analyst.
 
 1. Case study #1: Danny's Diner - https://8weeksqlchallenge.com/case-study-1/
+2. Case study #2: Pizza Runner - https://8weeksqlchallenge.com/case-study-2/
