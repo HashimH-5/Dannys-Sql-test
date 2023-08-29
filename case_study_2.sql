@@ -1,10 +1,25 @@
+/*
+A. Pizza Metrics
+
 1. How many pizzas were ordered?
+2. How many unique customer orders were made?
+3. How many successful orders were delivered by each runner?
+4. How many of each type of pizza was delivered?
+5. How many Vegetarian and Meatlovers were ordered by each customer?
+6. What was the maximum number of pizzas delivered in a single order?
+7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
+8. How many pizzas were delivered that had both exclusions and extras?
+9. What was the total volume of pizzas ordered for each hour of the day?
+10. What was the volume of orders for each day of the week?
+
+
+--1. How many pizzas were ordered?
 SELECT COUNT(pizza_id) AS no_of_pizzas
 FROM pizza_runner.customer_orders
-2. How many unique customer orders were made?
+--2. How many unique customer orders were made?
 SELECT COUNT(DISTINCT order_id)
 FROM pizza_runner.customer_orders
-3. How many successful orders were delivered by each runner?
+--3. How many successful orders were delivered by each runner?
 WITH cleaned_orders AS (
  SELECT order_id, runner_id, pickup_time, distance, duration, CASE WHEN cancellation IN ('','null') OR
 cancellation IS NULL THEN 0 ELSE 1 END AS cancellation
@@ -41,14 +56,15 @@ SELECT pizza_id,COUNT(*) AS delivered_orders
 FROM cleaned_orders
 WHERE cancellation = 0
 GROUP BY 1 )
-5
+
 --5. How many Vegetarian and Meatlovers were ordered by each customer?
 SELECT customer_id,
 coalescE(SUM(CASE WHEN pizza_id = 1 THEN 1 ELSE 0 END),0) AS meatlovers,
 COALESCE(SUM(CASE WHEN pizza_id = 2 then 1 ELSE 0 END),0) AS vegetarian
 FROM pizza_runner.customer_orders
 GROUP BY 1
-6
+
+--6
 WITH runner_orders AS (
 
 SELECT order_id, runner_id, pickup_time, distance, duration, CASE WHEN cancellation IN ('null', '') OR
@@ -66,7 +82,8 @@ LEFT JOIN pizza_runner.customer_orders
 USING (order_id)
 GROUP BY order_id
 ORDER BY pizzas_delivered DESc
-7
+
+--7
 WITH cleaned_orders AS (
  SELECT order_id, customer_id, pizza_id,
  CASE WHEN exclusions IN ('null','') THEN null ELSE exclusions END AS exclusions,
@@ -92,7 +109,8 @@ COUNT(CASE WHEN change = 0 THEN 0 END) AS pizza_no_change,
 COUNT(CASE WHEN change = 1 THEN 1 END) AS pizza_with_change
 FROM pizzas
 GROUP BY customer_id
-8
+
+--8
 WITH cleaned_orders AS (
  SELECT order_id, customer_id, pizza_id,
  CASE WHEN exclusions IN ('null','') THEN null ELSE exclusions END AS exclusions,
@@ -116,12 +134,14 @@ WHERE cancellation = 0
 SELECT COUNT(*) AS pizza_delivered
 FROM pizzas
 WHERE both_ex = 1
-9.
+
+--9.
 SELECT EXTRACT(hour FROM order_time) AS hod, COUNT(*) as pizza_ordered
 FROM pizza_runner.customer_orders
 GROUP BY hod
 ORDER BY pizza_ordered desc
-10.
+
+--10.
 SELECT TO_CHAR(order_time, 'Day') AS dow,EXTRACT(dow FROM order_time) AS dow2, COUNT(*) as
 pizza_ordered
 FROM pizza_runner.customer_orders
@@ -129,14 +149,17 @@ GROUP BY 1,2
 ORDER BY pizza_ordered desc
 --TO_CHAR function converts a number or date to a string.
 --TO_TIMESTAMP converts char to a value of TIMESTAMP data type.
-B. Runner and Customer Experience
-1.
+
+
+
+--B. Runner and Customer Experience
+--1.
 SELECT CONCAT('Week', to_char(registration_date, 'WW')) AS registration_week, COUNT(runner_id) AS
 runners_registered
 FROM pizza_runner.runners
 GROUP BY 1
 ORDER BY 1
-2--What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to
+--2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to
 pickup the order?
 WITH runner_orders AS (
  SELECT order_id, runner_id, CASE WHEN pickup_time IN ('null','') THEN NULL ELSE
@@ -157,7 +180,9 @@ time_difference AS (
 SELECT runner_id, ROUND(AVG(time_taken_seconds/60.0)) AS avg_minutes
 FROM time_difference
 GROUP BY 1
-3.--Is there any relationship between the number of pizzas and how long the order takes to prepare?
+
+
+--3.Is there any relationship between the number of pizzas and how long the order takes to prepare?
 -- There exists a positive relationship b/w no of pizzas ordered and the time taken to prepare
 WITH runner_orders AS (
  SELECT order_id, runner_id, CASE WHEN pickup_time IN ('null','') THEN NULL ELSE
@@ -180,7 +205,8 @@ SELECT pizza_ordered, AVG(time_taken_seconds) AS avg_seconds
 FROM time_difference
 GROUP BY 1
 ORDER BY 1
-4.
+
+--4.
 WITH runner_orders AS (
  SELECT order_id, runner_id, CASE WHEN pickup_time IN ('null','') THEN NULL ELSE
 TO_TIMESTAMP(pickup_time, 'YYYY-MM-DD HH24:MI:SS') END AS pickup_time,
@@ -203,7 +229,9 @@ time_differences AS (
 SELECT customer_id, AVG(distance::FLOAT) AS avg_km
 FROM time_differences
 GROUP BY 1
-5--What was the difference between the longest and shortest delivery times for all orders?
+
+
+--5.What was the difference between the longest and shortest delivery times for all orders?
 WITH runner_orders AS (
  SELECT order_id, runner_id,
  CASE WHEN pickup_time IN ('null','') THEN NULL ELSE TO_TIMESTAMP(pickup_time, 'YYYY-MM-DD
@@ -219,7 +247,9 @@ SELECT MAX(duration_min) AS longest_delivery,
  MIN(duration_min) AS shortest_delivery,
  MAX(duration_min) - MIN(duration_min) AS difference
  FROM runner_orders
-6--What was the average speed for each runner for each delivery and do you notice any trend for these
+
+
+--6.What was the average speed for each runner for each delivery and do you notice any trend for these
 values?
 WITH runner_orders AS (
  SELECT order_id, runner_id,
@@ -238,7 +268,9 @@ distance_km::FLOAT/(duration_min/60.0) AS km_per_hour
 FROM runner_orders
 WHERE cancellation = 0
 ORDER BY runner_id
-7.
+
+
+--7.
 --What is the successful delivery percentage for each runner?
 WITH runner_orders AS (
  SELECT order_id, runner_id,
@@ -257,19 +289,21 @@ COUNT(*) AS orders,
 COUNT(CASE WHEN cancellation = 0 then cancellation END)/COUNT(*)::FLOAT AS percent_successful
 FROM runner_orders
 GROUP BY 1
-Ingredients Optimization
-UNNEST(STRING_TO_ARRAY(array, ', ')) function--expand the array into rows
+
+--Ingredients Optimization
+/* UNNEST(STRING_TO_ARRAY(array, ', ')) function--expand the array into rows
  ( ----- ) array
 -row
 -row
--row
-STRING_AGG( ',') --Combines words using a separator parameter that allows separating the expressions
+-row*/
+--STRING_AGG( ',') --Combines words using a separator parameter that allows separating the expressions
 to be concatenated
 ::INTEGER -- Converts values to integer
 EXTRACT(EPOCH FROM time_taken) ---- extracts seconds
 SPLIT_PART(distance, 'km' , 1) ---- splits distance and km apart
 (SPLIT_PART(duration,'min',1))::INTEGER --- Splits duration then converts to integer
-1. What are the standard ingredients for each pizza?
+
+--1. What are the standard ingredients for each pizza?
 WITH topping_unnest AS (
  SELECT pizza_id, UNNEST(STRING_TO_ARRAY(toppings, ', '))::INTEGER AS topping_id
  FROM pizza_runner.pizza_recipes
@@ -283,6 +317,8 @@ SELECT pizza_id, STRING_AGG(topping_name,', ') AS ingredients
 FROM toppings
 GROUP BY pizza_id
 ORDER BY 1
+
+
 --2. What was the most commonly added extra?
 WITH orders_extras AS (
 SELECT order_id, UNNEST(STRING_TO_ARRAY(extras, ', ')) AS extras
@@ -300,6 +336,8 @@ WHERE extras IS NOT NULL
 GROUP BY topping_name
 ORDER BY no_of_times DESC
 LIMIT 1
+
+
 --3.What was the most common exclusion?
 WITH orders_exclusions AS (
  SELECT order_id, UNNEST(STRING_TO_ARRAY(exclusions, ', ')) AS exclusions
@@ -317,7 +355,9 @@ WHERE exclusions IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
 LIMIT 1
-4.
+
+
+--4.
 /*Generate an order item for each record in the customers_orders table in the format of one of the
 following:
 Meat Lovers
