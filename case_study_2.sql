@@ -10,7 +10,7 @@ A. Pizza Metrics
 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
 8. How many pizzas were delivered that had both exclusions and extras?
 9. What was the total volume of pizzas ordered for each hour of the day?
-10. What was the volume of orders for each day of the week?
+10. What was the volume of orders for each day of the week?*/
 
 
 --1. How many pizzas were ordered?
